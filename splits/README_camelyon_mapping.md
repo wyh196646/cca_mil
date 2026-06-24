@@ -5,7 +5,7 @@ FOCUS-style CAMELYON splits mix two naming schemes:
 - `patient_XXX_node_Y`: CAMELYON17 official slide ids.
 - `slide_N`: CAMELYON16 slides after FOCUS-style renaming.
 
-For the local CAMELYON16 copy in `/data/yuhaowang/WSIFew/CAMELYON16`, the
+For the local CAMELYON16 copy in `/data2/yuhaowang/WSIFew/CAMELYON16`, the
 `slide_N` ids are ordered as:
 
 1. `normal_*.tif` in numeric order
@@ -36,8 +36,8 @@ Patch extraction example:
 
 ```bash
 python fast_create_patches_fp.py \
-  --source /data/yuhaowang/WSIFew/CAMELYON16 \
-  --save_dir /data/yuhaowang/WSIFew/processd_wsi/CAMELYON16_FOCUS \
+  --source /data2/yuhaowang/WSIFew/CAMELYON16 \
+  --save_dir /data2/yuhaowang/WSIFew/processd_wsi/CAMELYON16_FOCUS \
   --process_list /home/yuhaowang/project/WSIFew/cca_mil/splits/camelyon16_focus_slide_mapping.csv \
   --slide_ext .tif \
   --patch --seg --stitch \
@@ -50,10 +50,10 @@ Feature extraction example:
 
 ```bash
 python fast_extract_features_fp.py \
-  --data_h5_dir /data/yuhaowang/WSIFew/processd_wsi/CAMELYON16_FOCUS \
-  --data_slide_dir /data/yuhaowang/WSIFew/CAMELYON16 \
+  --data_h5_dir /data2/yuhaowang/WSIFew/processd_wsi/CAMELYON16_FOCUS \
+  --data_slide_dir /data2/yuhaowang/WSIFew/CAMELYON16 \
   --csv_path /home/yuhaowang/project/WSIFew/cca_mil/splits/camelyon16_focus_slide_mapping.csv \
-  --feat_dir /data/yuhaowang/WSIFew/processd_wsi/CAMELYON16_FOCUS/feature \
+  --feat_dir /data2/yuhaowang/WSIFew/processd_wsi/CAMELYON16_FOCUS/feature \
   --slide_ext .tif \
   --model_name conch_v1 \
   --conch_ckpt_path /home/yuhaowang/project/WSIFew/cca_mil/ckg/pytorch_model.bin \

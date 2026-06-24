@@ -1,13 +1,36 @@
 import numpy as np
 import torch
 from utils.utils import *
+import csv
 import os
+from types import SimpleNamespace
 from datasets.dataset_generic import save_splits
 from models.model_mil import MIL_fc, MIL_fc_mc
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import roc_auc_score, roc_curve, f1_score
 from sklearn.metrics import auc as calc_auc
 from utils.loss_utils import FocalLoss
+
+
+def write_epoch_progress(results_dir, cur, epoch, val_loss, val_error, val_auc, val_f1):
+    if not results_dir:
+        return
+    os.makedirs(results_dir, exist_ok=True)
+    progress_path = os.path.join(results_dir, 'fold_{}_progress.csv'.format(cur))
+    write_header = not os.path.exists(progress_path) or os.path.getsize(progress_path) == 0
+    fieldnames = ['fold', 'epoch', 'val_loss', 'val_error', 'val_auc', 'val_f1']
+    with open(progress_path, 'a', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if write_header:
+            writer.writeheader()
+        writer.writerow({
+            'fold': cur,
+            'epoch': epoch,
+            'val_loss': val_loss,
+            'val_error': val_error,
+            'val_auc': val_auc,
+            'val_f1': val_f1,
+        })
 
 
 class Accuracy_Logger(object):
@@ -128,9 +151,8 @@ def train(datasets, cur, args):
     model_dict = {"dropout": args.drop_out, 'n_classes': args.n_classes}
 
     if args.model_type == 'ViLa_MIL':
-        import ml_collections
         from models.model_ViLa_MIL import ViLa_MIL_Model
-        config = ml_collections.ConfigDict()
+        config = SimpleNamespace()
         config.input_size = 512
         config.hidden_size = 192
         config.text_prompt = args.text_prompt
@@ -139,9 +161,8 @@ def train(datasets, cur, args):
         model = ViLa_MIL_Model(**model_dict)
         
     elif args.model_type == 'FOCUS':
-        import ml_collections
         from models.model_FOCUS import FOCUS
-        config = ml_collections.ConfigDict()
+        config = SimpleNamespace()
         config.input_size = 512
         config.hidden_size = 192
         config.text_prompt = args.text_prompt
@@ -154,26 +175,33 @@ def train(datasets, cur, args):
         model = FOCUS(**model_dict)
 
     elif args.model_type == 'CCA_MIL':
-        import ml_collections
         from models.cca_mil import CCA_MIL
-        config = ml_collections.ConfigDict()
+        config = SimpleNamespace()
         config.input_size = 512
         config.feature_dim = 512
         config.concept_bank_path = args.concept_bank_path
         config.class_names = args.class_names
-        config.cluster_k = args.cluster_k
-        config.kmeans_iters = args.kmeans_iters
-        config.normalize_kmeans = not args.no_normalize_kmeans
-        config.min_cluster_size = args.min_cluster_size
-        config.selection_top_r = args.selection_top_r
-        config.concept_alpha = args.concept_alpha
-        config.common_concept_weight = args.common_concept_weight
-        config.lambda_con = args.lambda_con
-        config.lambda_div = args.lambda_div
-        config.tau = args.tau
-        config.train_concept_prompt = args.train_concept_prompt
-        config.store_explanations = args.store_explanations
-        config.conch_ckpt_path = args.conch_ckpt_path
+        config.dropout = 0.25 if getattr(args, 'drop_out', False) else 0.0
+        config.num_visual_prototypes = getattr(args, 'num_visual_prototypes', 8)
+        config.proto_tau = getattr(args, 'proto_tau', 0.1)
+        config.ot_epsilon = getattr(args, 'ot_epsilon', 0.05)
+        config.sinkhorn_iter = getattr(args, 'sinkhorn_iter', 50)
+        config.uot_rho_a = getattr(args, 'uot_rho_a', 0.5)
+        config.uot_rho_b = getattr(args, 'uot_rho_b', 0.5)
+        config.concept_pooling = getattr(args, 'concept_pooling', 'attention')
+        config.common_concept_weight = getattr(args, 'common_concept_weight', 0.3)
+        config.lambda_contrast = getattr(args, 'lambda_contrast', getattr(args, 'lambda_con', 0.0))
+        config.lambda_div = getattr(args, 'lambda_div', 0.0)
+        config.contrast_tau = getattr(args, 'contrast_tau', getattr(args, 'tau', 0.07))
+        config.train_concept_prompt = getattr(args, 'train_concept_prompt', False)
+        config.concept_prompt_n_ctx = getattr(args, 'concept_prompt_n_ctx', 0)
+        config.concept_prompt_template_count = getattr(args, 'concept_prompt_template_count', 0)
+        config.max_train_patches = getattr(args, 'max_train_patches', 0)
+        config.max_eval_patches = getattr(args, 'max_eval_patches', 0)
+        config.concept_logit_weight = getattr(args, 'concept_logit_weight', 0.0)
+        config.concept_logit_tau = getattr(args, 'concept_logit_tau', 1.0)
+        config.store_explanations = getattr(args, 'store_explanations', False)
+        config.conch_ckpt_path = getattr(args, 'conch_ckpt_path', 'ckg/pytorch_model.bin')
         model_dict = {'config': config, 'num_classes': args.n_classes}
         model = CCA_MIL(**model_dict)
 
@@ -195,7 +223,14 @@ def train(datasets, cur, args):
     optimizer = get_optim(model, args)
     print('Done!')
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=10, verbose=True)
+    try:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, 'min', factor=0.1, patience=10, verbose=True
+        )
+    except TypeError:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, 'min', factor=0.1, patience=10
+        )
 
     print('\nInit Loaders...', end=' ')
     train_loader = get_split_loader(train_split, training=True, testing = args.testing, weighted = args.weighted_sample, mode=args.mode)
@@ -205,7 +240,11 @@ def train(datasets, cur, args):
 
     print('\nSetup EarlyStopping...', end=' ')
     if args.early_stopping:
-        early_stopping = EarlyStopping(patience=20, stop_epoch=40, verbose=True)
+        early_stopping = EarlyStopping(
+            patience=getattr(args, 'early_stopping_patience', 15),
+            stop_epoch=getattr(args, 'early_stopping_stop_epoch', 0),
+            verbose=True,
+        )
     else:
         early_stopping = None
     print('Done!')
@@ -243,7 +282,7 @@ def train(datasets, cur, args):
         writer.add_scalar('final/test_error', test_error, 0)
         writer.add_scalar('final/test_auc', test_auc, 0)
         writer.close()
-    return results_dict, test_auc, val_auc, 1-test_error, 1-val_error, each_class_acc, test_f1
+    return results_dict, test_auc, val_auc, 1-test_error, 1-val_error, each_class_acc, test_f1, val_f1
 
 
 def train_loop(args, epoch, model, loader, optimizer, n_classes, writer = None, loss_fn = None):
@@ -338,6 +377,8 @@ def validate(cur, epoch, model, loader, n_classes, early_stopping = None, writer
     for i in range(n_classes):
         acc, correct, count = acc_logger.get_summary(i)
         print('class {}: acc {:.4f}, correct {}/{}'.format(i, acc, correct, count))
+
+    write_epoch_progress(results_dir, cur, epoch, val_loss, val_error, auc, val_f1)
 
     if early_stopping:
         assert results_dir

@@ -9,12 +9,15 @@ from pathlib import Path
 import h5py
 import numpy as np
 import pandas as pd
+from PIL import Image
 from tqdm import tqdm
 
 from wsi_core.WholeSlideImage import WholeSlideImage
 from wsi_core.batch_process_utils import initialize_df
 from wsi_core.wsi_utils import StitchCoords
 
+
+Image.MAX_IMAGE_PIXELS = None
 
 COMPLETED_STATUSES = {"processed", "already_exist", "no_patches"}
 
@@ -465,9 +468,24 @@ def _process_one_slide(task):
         result["updates"] = updates
 
         w, h = wsi_object.level_dim[current_seg["seg_level"]]
+        if w * h > 1e8 and len(wsi_object.level_dim) > 1:
+            fallback_seg_level = wsi_object.getOpenSlide().get_best_level_for_downsample(64)
+            fallback_w, fallback_h = wsi_object.level_dim[fallback_seg_level]
+            if fallback_w * fallback_h <= 1e8:
+                current_seg["seg_level"] = fallback_seg_level
+                if current_vis["vis_level"] == 0:
+                    current_vis["vis_level"] = fallback_seg_level
+                result["updates"]["seg_level"] = fallback_seg_level
+                result["updates"]["vis_level"] = current_vis["vis_level"]
+                w, h = fallback_w, fallback_h
+
         if w * h > 1e8:
             result["status"] = "failed_seg"
-            result["error"] = "segmentation level is too large: {} x {}".format(w, h)
+            result["error"] = (
+                "segmentation level is too large: {} x {}. "
+                "For single-level PNG slides such as UBC-OCEAN, convert them to tiled pyramidal TIFF first "
+                "(see tools/convert_ubc_png_to_pyramid_tiff.py), then rerun patch extraction on the .tif folder."
+            ).format(w, h)
             return result
 
         if args["seg"]:

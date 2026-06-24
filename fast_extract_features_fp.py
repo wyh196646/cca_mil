@@ -11,8 +11,11 @@ from pathlib import Path
 import h5py
 import numpy as np
 import pandas as pd
+from PIL import Image
 from tqdm import tqdm
 
+
+Image.MAX_IMAGE_PIXELS = None
 
 OPENAI_MEAN = [0.48145466, 0.4578275, 0.40821073]
 OPENAI_STD = [0.26862954, 0.26130258, 0.27577711]

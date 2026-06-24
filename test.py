@@ -1,33 +1,80 @@
 import os
-import time
-import traceback
+import csv
+import argparse
 
-import kagglehub
-from requests.exceptions import ChunkedEncodingError, ConnectionError, ReadTimeout
 
-os.environ["KAGGLEHUB_CACHE"] = "/data/yuhaowang/kagglehub_cache"
+def find_svs_files(folder_path):
+    svs_files = []
 
-OUT_DIR = "/data/yuhaowang/data/pathology/UBC-OCEAN"
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            if file.lower().endswith(".svs"):
+                svs_files.append(file)
 
-for i in range(200):
-    try:
-        print(f"[try {i + 1}] start / resume downloading UBC-OCEAN ...")
+    return sorted(svs_files)
 
-        path = kagglehub.competition_download(
-            "UBC-OCEAN",
-            output_dir=OUT_DIR,
-        )
 
-        print("Download finished.")
-        print("Path:", path)
-        break
+def write_csv(result_dict, output_csv):
+    folder_names = list(result_dict.keys())
+    max_len = max((len(files) for files in result_dict.values()), default=0)
 
-    except (ChunkedEncodingError, ConnectionError, ReadTimeout) as e:
-        print(f"[try {i + 1}] network interrupted, will resume later.")
-        print(repr(e))
-        time.sleep(min(300, 30 * (i + 1)))
+    with open(output_csv, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(folder_names)
 
-    except Exception:
-        print("[fatal error]")
-        traceback.print_exc()
-        raise
+        for i in range(max_len):
+            row = []
+            for folder in folder_names:
+                files = result_dict[folder]
+                row.append(files[i] if i < len(files) else "")
+            writer.writerow(row)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="递归统计指定文件夹下的 SVS 文件，并输出为 CSV"
+    )
+
+    parser.add_argument(
+        "root_dir",
+        help="根目录路径"
+    )
+
+    parser.add_argument(
+        "folders",
+        nargs=3,
+        help="根目录下的三个文件夹名字"
+    )
+
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="svs_files.csv",
+        help="输出 CSV 文件名，默认 svs_files.csv"
+    )
+
+    args = parser.parse_args()
+
+    result = {}
+
+    for folder_name in args.folders:
+        folder_path = os.path.join(args.root_dir, folder_name)
+
+        if not os.path.isdir(folder_path):
+            print(f"警告：文件夹不存在，跳过：{folder_path}")
+            result[folder_name] = []
+            continue
+
+        result[folder_name] = find_svs_files(folder_path)
+
+    write_csv(result, args.output)
+
+    print(f"统计完成，结果已保存到：{args.output}")
+
+
+if __name__ == "__main__":
+    main()
+    
+    
+#python test.py /data2/yuhaowang/WSIFew/TCGA TCGA-KICH  TCGA-KIRC  TCGA-KIRP -o result.csv
+

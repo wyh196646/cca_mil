@@ -6,6 +6,7 @@ from utils.utils import *
 from utils.core_utils import Accuracy_Logger
 from sklearn.metrics import roc_auc_score, roc_curve, auc, f1_score
 from sklearn.preprocessing import label_binarize
+from types import SimpleNamespace
 
 
 def initiate_model(args, ckpt_path):
@@ -16,9 +17,8 @@ def initiate_model(args, ckpt_path):
         model_dict.update({"size_arg": args.model_size})
     
     if args.model_type == 'ViLa_MIL':
-        import ml_collections
         from models.model_ViLa_MIL import ViLa_MIL_Model
-        config = ml_collections.ConfigDict()
+        config = SimpleNamespace()
         config.input_size = 512
         config.hidden_size = 192
         config.text_prompt = args.text_prompt
@@ -27,9 +27,8 @@ def initiate_model(args, ckpt_path):
         model = ViLa_MIL_Model(**model_dict)
 
     elif args.model_type == 'FOCUS':
-        import ml_collections
         from models.model_FOCUS import FOCUS
-        config = ml_collections.ConfigDict()
+        config = SimpleNamespace()
         config.input_size = 512
         config.hidden_size = 192
         config.text_prompt = args.text_prompt
@@ -42,24 +41,31 @@ def initiate_model(args, ckpt_path):
         model = FOCUS(**model_dict)
 
     elif args.model_type == 'CCA_MIL':
-        import ml_collections
         from models.cca_mil import CCA_MIL
-        config = ml_collections.ConfigDict()
+        config = SimpleNamespace()
         config.input_size = 512
         config.feature_dim = 512
         config.concept_bank_path = args.concept_bank_path
         config.class_names = getattr(args, 'class_names', None)
-        config.cluster_k = getattr(args, 'cluster_k', 8)
-        config.kmeans_iters = getattr(args, 'kmeans_iters', 10)
-        config.normalize_kmeans = not getattr(args, 'no_normalize_kmeans', False)
-        config.min_cluster_size = getattr(args, 'min_cluster_size', 5)
-        config.selection_top_r = getattr(args, 'selection_top_r', 3)
-        config.concept_alpha = getattr(args, 'concept_alpha', 0.5)
+        config.dropout = 0.25 if getattr(args, 'drop_out', False) else 0.0
+        config.num_visual_prototypes = getattr(args, 'num_visual_prototypes', 8)
+        config.proto_tau = getattr(args, 'proto_tau', 0.1)
+        config.ot_epsilon = getattr(args, 'ot_epsilon', 0.05)
+        config.sinkhorn_iter = getattr(args, 'sinkhorn_iter', 50)
+        config.uot_rho_a = getattr(args, 'uot_rho_a', 0.5)
+        config.uot_rho_b = getattr(args, 'uot_rho_b', 0.5)
+        config.concept_pooling = getattr(args, 'concept_pooling', 'attention')
         config.common_concept_weight = getattr(args, 'common_concept_weight', 0.3)
-        config.lambda_con = getattr(args, 'lambda_con', 0.1)
-        config.lambda_div = getattr(args, 'lambda_div', 0.01)
-        config.tau = getattr(args, 'tau', 0.07)
+        config.lambda_contrast = getattr(args, 'lambda_contrast', getattr(args, 'lambda_con', 0.0))
+        config.lambda_div = getattr(args, 'lambda_div', 0.0)
+        config.contrast_tau = getattr(args, 'contrast_tau', getattr(args, 'tau', 0.07))
         config.train_concept_prompt = getattr(args, 'train_concept_prompt', False)
+        config.concept_prompt_n_ctx = getattr(args, 'concept_prompt_n_ctx', 0)
+        config.concept_prompt_template_count = getattr(args, 'concept_prompt_template_count', 0)
+        config.max_train_patches = getattr(args, 'max_train_patches', 0)
+        config.max_eval_patches = getattr(args, 'max_eval_patches', 0)
+        config.concept_logit_weight = getattr(args, 'concept_logit_weight', 0.0)
+        config.concept_logit_tau = getattr(args, 'concept_logit_tau', 1.0)
         config.store_explanations = getattr(args, 'store_explanations', False)
         config.conch_ckpt_path = getattr(args, 'conch_ckpt_path', 'ckg/pytorch_model.bin')
         model_dict = {'config': config, 'num_classes': args.n_classes}

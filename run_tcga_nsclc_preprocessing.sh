@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RAW_DIR="${RAW_DIR:-/data/yuhaowang/WSIFew/TCGA-NSCLC}"
-PROCESSED_DIR="${PROCESSED_DIR:-/data/yuhaowang/WSIFew/processd_wsi/TCGA-NSCLC}"
+RAW_DIR="${RAW_DIR:-/data2/yuhaowang/WSIFew/TCGA-NSCLC}"
+PROCESSED_DIR="${PROCESSED_DIR:-/data2/yuhaowang/WSIFew/processd_wsi/TCGA-NSCLC}"
 DATASET_CSV="${DATASET_CSV:-$ROOT_DIR/dataset_csv/LUAD_LUSC.csv}"
 CONCH_CKPT="${CONCH_CKPT:-$ROOT_DIR/ckg/pytorch_model.bin}"
 GPUS="${GPUS:-2,3,4,5,6,7}"
@@ -70,7 +70,7 @@ conda run -n hest python tools/audit_preprocessing.py \
   --processed_dir "$PROCESSED_DIR" \
   --feat_dir "$PROCESSED_DIR/feature" \
   --dataset_csv "$DATASET_CSV" \
-  --split_dir splits/LUAD_LUSC_4shots_10folds splits/LUAD_LUSC_8shots_10folds splits/LUAD_LUSC_16shots_10folds \
+  --split_dir splits/LUAD_LUSC_1shots_5folds splits/LUAD_LUSC_4shots_5folds splits/LUAD_LUSC_16shots_5folds \
   --slide_exts .svs \
   --strict
 

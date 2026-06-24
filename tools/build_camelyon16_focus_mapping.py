@@ -22,7 +22,7 @@ import pandas as pd
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CAMELYON16_DIR = Path("/data/yuhaowang/WSIFew/CAMELYON16")
+DEFAULT_CAMELYON16_DIR = Path("/data2/yuhaowang/WSIFew/CAMELYON16")
 DEFAULT_FOCUS_CSV = Path("/home/yuhaowang/project/PathARK/data/dataset_csv/camelyon.csv")
 DEFAULT_OUT_CSV = REPO_ROOT / "splits" / "camelyon16_focus_slide_mapping.csv"
 

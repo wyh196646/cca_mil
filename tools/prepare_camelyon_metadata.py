@@ -18,15 +18,15 @@ import pandas as pd
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_FEATURE_DIR = Path("/data/yuhaowang/WSIFew/processd_wsi/CAMELYON/feature/pt_files")
+DEFAULT_FEATURE_DIR = Path("/data2/yuhaowang/WSIFew/processd_wsi/CAMELYON/feature/pt_files")
 DEFAULT_MAPPING_CSV = REPO_ROOT / "splits" / "camelyon16_focus_slide_mapping.csv"
-DEFAULT_CAMELYON17_CSV = Path("/data/yuhaowang/WSIFew/CAMELYON17/camelyon17_stage_4subtyping.csv")
+DEFAULT_CAMELYON17_CSV = Path("/data2/yuhaowang/WSIFew/CAMELYON17/camelyon17_stage_4subtyping.csv")
 DEFAULT_OUT_CSV = REPO_ROOT / "dataset_csv" / "camelyon.csv"
 DEFAULT_SPLITS_ROOT = REPO_ROOT / "splits"
 DEFAULT_SPLIT_DIRS = (
-    "camelyon_4shots_10folds",
-    "camelyon_8shots_10folds",
-    "camelyon_16shots_10folds",
+    "camelyon_1shots_5folds",
+    "camelyon_4shots_5folds",
+    "camelyon_16shots_5folds",
 )
 
 

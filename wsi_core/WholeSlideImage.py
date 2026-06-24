@@ -14,7 +14,10 @@ from wsi_core.wsi_utils import savePatchIter_bag_hdf5, initialize_hdf5_bag, coor
 from wsi_core.util_classes import isInContourV1, isInContourV2, isInContourV3_Easy, isInContourV3_Hard, Contour_Checking_fn
 from utils.file_utils import load_pkl, save_pkl
 
-Image.MAX_IMAGE_PIXELS = 933120000
+# UBC-OCEAN contains very large PNG slides. OpenSlide falls back to PIL's
+# ImageSlide for PNG, and PIL raises DecompressionBombError for these trusted
+# local pathology images unless the safety limit is disabled.
+Image.MAX_IMAGE_PIXELS = None
 
 class WholeSlideImage(object):
     def __init__(self, path):
@@ -754,5 +757,4 @@ class WholeSlideImage(object):
         tissue_mask = tissue_mask.astype(bool)
         print('detected {}/{} of region as tissue'.format(tissue_mask.sum(), tissue_mask.size))
         return tissue_mask
-
 

@@ -6,6 +6,12 @@ from PIL import Image
 import math
 import cv2
 
+
+def _exceeds_max_image_pixels(width, height):
+    max_pixels = Image.MAX_IMAGE_PIXELS
+    return max_pixels is not None and width * height > max_pixels
+
+
 def isWhitePatch(patch, satThresh=5):
     patch_hsv = cv2.cvtColor(patch, cv2.COLOR_RGB2HSV)
     return True if np.mean(patch_hsv[:,:,1]) < satThresh else False
@@ -254,7 +260,7 @@ def StitchPatches(hdf5_file_path, downscale=16, draw_grid=False, bg_color=(0,0,0
     print('patch shape: {}'.format(img_shape))
     downscaled_shape = (img_shape[1] // downscale, img_shape[0] // downscale)
 
-    if w*h > Image.MAX_IMAGE_PIXELS: 
+    if _exceeds_max_image_pixels(w, h):
         raise Image.DecompressionBombError("Visualization Downscale %d is too large" % downscale)
     
     if alpha < 0 or alpha == -1:
@@ -290,7 +296,7 @@ def StitchCoords(hdf5_file_path, wsi_object, downscale=16, draw_grid=False, bg_c
     patch_size = tuple((np.array((patch_size, patch_size)) * wsi.level_downsamples[patch_level]).astype(np.int32))
     print('ref patch size: {}x{}'.format(patch_size, patch_size))
 
-    if w*h > Image.MAX_IMAGE_PIXELS: 
+    if _exceeds_max_image_pixels(w, h):
         raise Image.DecompressionBombError("Visualization Downscale %d is too large" % downscale)
     
     if alpha < 0 or alpha == -1:

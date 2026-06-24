@@ -8,8 +8,8 @@ parser.add_argument('--label_frac', type=float, default= 1.0,
                     help='fraction of labels (default: 1)')
 parser.add_argument('--seed', type=int, default=1,
                     help='random seed (default: 1)')
-parser.add_argument('--k', type=int, default=10,
-                    help='number of splits (default: 10)')
+parser.add_argument('--k', type=int, default=5,
+                    help='number of splits (default: 5)')
 parser.add_argument('--task', type=str)
 parser.add_argument('--val_frac', type=float, default= 0.2,
                     help='fraction of labels for validation (default: 0.1)')
@@ -64,6 +64,5 @@ if __name__ == '__main__':
             save_splits(splits, ['train', 'val', 'test'], os.path.join(split_dir, 'splits_{}.csv'.format(i)))
             save_splits(splits, ['train', 'val', 'test'], os.path.join(split_dir, 'splits_{}_bool.csv'.format(i)), boolean_style=True)
             descriptor_df.to_csv(os.path.join(split_dir, 'splits_{}_descriptor.csv'.format(i)))
-
 
 
